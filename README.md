@@ -1,6 +1,9 @@
-# EcoSortAR
+# EcoSort
 
-EcoSortAR tackles the issue of recycling contamination, a major problem in North America where only about 25–27% of recyclable waste is properly diverted, resulting in billions of dollars in unnecessary costs—over $20 million in extra expenses for Toronto alone and more than $3.5 billion across the U.S. due to manual sorting, lost material value, and landfilling rejected loads. Our app uses machine learning to identify waste items in real time and leverages augmented reality to show users what type of material they're disposing of, helping them learn proper sorting habits over time.
+EcoSort is a waste-sorting app that leverages augmented reality to show what type of waste bin your waste belongs to, and incentivizes users to learn proper sorting habits over time. 
+
+
+EcoSort tackles the issue of recycling contamination, a major problem in North America where only about 25–27% of recyclable waste is properly diverted, resulting in billions of dollars in unnecessary costs—over $20 million in extra expenses for Toronto alone and more than $3.5 billion across the U.S. due to manual sorting, lost material value, and landfilling rejected loads.
 
 ## Demo
 
