@@ -1,19 +1,32 @@
-# Webcam Garbage Classifier
+# EcoSortAR
 
-EcoSortAR tackles the issue of recycling contamination, a major problem in North America where only about 25–27% of recyclable waste is properly diverted, resulting in billions of dollars in unnecessary costs—over $20 million in extra expenses for Toronto alone and more than $3.5 billion across the U.S. due to manual sorting, lost material value, and landfilling rejected loads. Our app uses machine learning to identify waste items in real time and leverages augmented reality to show users what type of material they’re disposing of, helping them learn proper sorting habits over time. Powered by a YOLO deep learning model trained on 1,000 images categorized into e-waste, organics, plastic, cardboard, and paper, EcoSortAR analyzes the camera feed to instantly classify waste and provide sorting guidance. Looking ahead, we aim to reduce sorting errors by 10–20%, customize sorting rules to each user’s city, introduce gamified rewards for consistent accuracy, and eventually add an AR feature that overlays step-by-step disposal guidance directly on the detected item in the camera view.
+EcoSortAR tackles the issue of recycling contamination, a major problem in North America where only about 25–27% of recyclable waste is properly diverted, resulting in billions of dollars in unnecessary costs—over $20 million in extra expenses for Toronto alone and more than $3.5 billion across the U.S. due to manual sorting, lost material value, and landfilling rejected loads. Our app uses machine learning to identify waste items in real time and leverages augmented reality to show users what type of material they're disposing of, helping them learn proper sorting habits over time.
+
+## Demo
+
+![Classifying paper waste](images/eco.png)
+
+![Classifying plastic waste](images/eco2.png)
 
 ## Features
 
-- Real-time webcam capture
-- Yolov8 model inference
-- Classification of 6 types of waste:
+- **Real-time Classification**: Continuous webcam analysis with bounding box overlays
+- **ML-Powered**: Roboflow API integration with fallback to local YOLO model
+- **Gamification System**:
+  - Points for each classification (bonus for recyclables)
+  - Daily streaks with multipliers
+  - 14 unlockable badges
+  - Global leaderboard
+- **User Accounts**: Registration, login, profile pages
+- **Analytics Dashboard**: Track your environmental impact with charts
+- **Voice Feedback**: Optional audio announcements for classifications
+- **Classification Categories**:
   - Cardboard
   - Glass
   - Metal
   - Paper
   - Plastic
   - Trash
-- Beautiful, responsive UI with confidence scores
 
 ## Prerequisites
 
@@ -48,6 +61,17 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
+5. Set up environment variables:
+```bash
+cp .env.example .env
+```
+Edit `.env` and add your Roboflow API key (get one at https://app.roboflow.com/settings/api)
+
+6. Initialize the database:
+```bash
+python init_db.py
+```
+
 ## Running the Application
 
 1. Start the Flask server:
@@ -60,11 +84,11 @@ python app.py
 http://localhost:5000
 ```
 
-3. Click "Start Camera" to activate your webcam
+3. Register an account or log in
 
-4. Point your camera at a garbage item
+4. Click "Start Camera" to begin classifying
 
-5. Click "Classify Image" to get predictions
+5. Point your camera at waste items - classification happens automatically
 
 ## Usage Tips
 
@@ -75,11 +99,13 @@ http://localhost:5000
 
 ## Technologies Used
 
-- **Backend**: Flask (Python web framework)
-- **ML Framework**: Yolov8
+- **Backend**: Flask, Flask-Login, Flask-SQLAlchemy
+- **Database**: SQLite
+- **ML/Classification**: Roboflow API, YOLOv8 (fallback)
 - **Image Processing**: OpenCV, Pillow, NumPy
-- **Frontend**: HTML5, CSS3, JavaScript
+- **Frontend**: HTML5, CSS3, JavaScript, Bootstrap 5, Chart.js
 - **Webcam API**: MediaDevices Web API
+- **Voice**: Web Speech API
 
 ## Troubleshooting
 
@@ -88,11 +114,14 @@ http://localhost:5000
 - Check if another application is using the camera
 - Try refreshing the page or restarting the browser
 
-### Classification errors
-- Ensure all required packages are installed correctly
-- Check that model.tflite and labels.txt are in the correct directory
-- Verify Python version compatibility
+### Classification not working
+- Check that your Roboflow API key is set in `.env`
+- Verify your API key at https://app.roboflow.com/settings/api
+- If using local model, ensure `my_model.pt` and `labels.txt` exist
 
 ### Import errors
 - Ensure you're in the virtual environment
 - Try reinstalling requirements: `pip install -r requirements.txt --force-reinstall`
+
+### Database errors
+- Run `python init_db.py` to initialize/reset the database
