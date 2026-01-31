@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+
+{% block title %}Leaderboard - EcoSort AR{% endblock %}
+
+{% block extra_css %}
+<style>
+    .leaderboard-card {
+        background: white;
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    }
+
+    .timeframe-tabs {
+        display: flex;
+        background: #f8f9fa;
+        border-bottom: 1px solid #eee;
+    }
+
+    .timeframe-tab {
+        flex: 1;
+        padding: 15px;
+        text-align: center;
+        cursor: pointer;
+        border: none;
+        background: none;
+        font-weight: 500;
+        color: #666;
+        transition: all 0.3s;
+    }
+
+    .timeframe-tab:hover {
+        background: #f0f0f0;
+    }
+
+    .timeframe-tab.active {
+        background: white;
+        color: #667eea;
+        border-bottom: 3px solid #667eea;
+    }
+
+    .leaderboard-item {
+        display: flex;
+        align-items: center;
+        padding: 15px 20px;
+        border-bottom: 1px solid #f0f0f0;
+        transition: background 0.3s;
+    }
+
+    .leaderboard-item:hover {
+        background: #f8f9fa;
+    }
+
+    .leaderboard-item.current-user {
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+    }
+
+    .rank {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 1.2rem;
+        margin-right: 15px;
+    }
+
+    .rank-1 {
+        background: linear-gradient(135deg, #ffd700 0%, #ffb347 100%);
+        color: white;
+        font-size: 1.5rem;
+    }
+
+    .rank-2 {
+        background: linear-gradient(135deg, #c0c0c0 0%, #a8a8a8 100%);
+        color: white;
+    }
+
+    .rank-3 {
+        background: linear-gradient(135deg, #cd7f32 0%, #b87333 100%);
+        color: white;
+    }
+
+    .rank-default {
+        background: #f0f0f0;
+        color: #666;
+    }
+
+    .user-info {
+        flex-grow: 1;
+    }
+
+    .username {
+        font-weight: 600;
+        font-size: 1.1rem;
+    }
+
+    .user-meta {
+        display: flex;
+        gap: 15px;
+        font-size: 0.85rem;
+        color: #888;
+    }
+
+    .points-badge {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 8px 15px;
+        border-radius: 20px;
+        font-weight: 600;
+    }
+
+    .your-rank-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 20px;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .your-rank-number {
+        font-size: 3rem;
+        font-weight: bold;
+    }
+
+    .trophy-icon {
+        font-size: 1.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<h2 class="text-white mb-4"><i class="bi bi-trophy"></i> Leaderboard</h2>
+
+{% if current_user.is_authenticated %}
+<!-- Your Rank Card -->
+<div class="your-rank-card" id="yourRankCard">
+    <p class="mb-1">Your Global Rank</p>
+    <div class="your-rank-number" id="yourRank">-</div>
+    <p class="mb-0">{{ current_user.total_points }} points</p>
+</div>
+{% endif %}
+
+<!-- Leaderboard -->
+<div class="leaderboard-card">
+    <div class="timeframe-tabs">
+        <button class="timeframe-tab active" data-timeframe="all">All Time</button>
+        <button class="timeframe-tab" data-timeframe="monthly">This Month</button>
+        <button class="timeframe-tab" data-timeframe="weekly">This Week</button>
+    </div>
+
+    <div id="leaderboardList">
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const currentUsername = '{{ current_user.username if current_user.is_authenticated else "" }}';
+
+    // Load leaderboard
+    function loadLeaderboard(timeframe = 'all') {
+        const listEl = document.getElementById('leaderboardList');
+        listEl.innerHTML = `
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        `;
+
+        fetch(`/api/leaderboard/${timeframe}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    // Update user rank
+                    if (data.user_rank) {
+                        document.getElementById('yourRank').textContent = '#' + data.user_rank;
+                    }
+
+                    // Render leaderboard
+                    if (data.leaderboard.length === 0) {
+                        listEl.innerHTML = '<div class="text-center py-5 text-muted">No data yet. Be the first!</div>';
+                        return;
+                    }
+
+                    listEl.innerHTML = data.leaderboard.map(user => {
+                        const isCurrentUser = user.username === currentUsername;
+                        const rankClass = user.rank <= 3 ? `rank-${user.rank}` : 'rank-default';
+                        const trophyIcon = user.rank === 1 ? '🏆' : (user.rank === 2 ? '🥈' : (user.rank === 3 ? '🥉' : ''));
+
+                        return `
+                            <div class="leaderboard-item ${isCurrentUser ? 'current-user' : ''}">
+                                <div class="rank ${rankClass}">
+                                    ${trophyIcon || user.rank}
+                                </div>
+                                <div class="user-info">
+                                    <div class="username">
+                                        ${user.username}
+                                        ${isCurrentUser ? '<span class="badge bg-primary ms-2">You</span>' : ''}
+                                    </div>
+                                    <div class="user-meta">
+                                        <span><i class="bi bi-fire"></i> ${user.streak} day streak</span>
+                                        <span><i class="bi bi-award"></i> ${user.badge_count} badges</span>
+                                    </div>
+                                </div>
+                                <div class="points-badge">
+                                    ${user.points.toLocaleString()} pts
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            })
+            .catch(err => {
+                listEl.innerHTML = '<div class="text-center py-5 text-danger">Error loading leaderboard</div>';
+            });
+    }
+
+    // Timeframe tab switching
+    document.querySelectorAll('.timeframe-tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+            document.querySelectorAll('.timeframe-tab').forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+            loadLeaderboard(this.dataset.timeframe);
+        });
+    });
+
+    // Initial load
+    loadLeaderboard('all');
+</script>
+{% endblock %}

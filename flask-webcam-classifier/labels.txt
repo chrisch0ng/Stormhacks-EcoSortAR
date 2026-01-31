@@ -1,11 +1,6 @@
-E-waste
-Metal-waste
-bottles
 cardboard
-cups
-organic-waste
-other-trash
+glass
+metal
 paper
-plastic-waste
+plastic
 trash
-trashbin
