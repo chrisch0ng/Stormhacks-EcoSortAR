@@ -283,9 +283,7 @@
 
 {% block extra_js %}
 <script>
-    // Category mapping - supports both local model and Roboflow
     const fineToCoarseMap = {
-        // Original local model categories
         "E-waste": "metal",
         "Metal-waste": "metal",
         "bottles": "plastic",
@@ -297,7 +295,6 @@
         "plastic-waste": "plastic",
         "trash": "trash",
         "trashbin": "trash",
-        // Roboflow categories (already simplified)
         "metal": "metal",
         "glass": "glass",
         "plastic": "plastic"
@@ -383,7 +380,6 @@
     }
 
     async function captureAndClassify() {
-        // Draw current webcam frame to canvas for conversion
         ctx.drawImage(webcam, 0, 0, canvas.width, canvas.height);
         const imageData = canvas.toDataURL('image/jpeg');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -401,27 +397,22 @@
                 displayPredictions(result.predictions);
                 drawBoundingBoxes(result.boxes);
 
-                // Handle gamification results
                 if (result.gamification) {
                     const gam = result.gamification;
 
-                    // Show points popup
                     showPointsPopup(gam.points_earned);
                     updateSessionStats(gam.points_earned);
 
-                    // Announce the classification
                     if (result.boxes.length > 0) {
                         const topItem = result.boxes[0];
                         const category = fineToCoarseMap[topItem.fine_class] || topItem.class;
 
-                        // Only speak if it's a new item
                         if (category !== lastClassifiedItem) {
                             lastClassifiedItem = category;
                             speak(`${category}. Plus ${gam.points_earned} points.`);
                         }
                     }
 
-                    // Check for new badges
                     if (gam.new_badges && gam.new_badges.length > 0) {
                         gam.new_badges.forEach(badge => {
                             showBadgeNotification(badge);
@@ -466,16 +457,13 @@
     }
 
     function drawBoundingBoxes(boxes) {
-        // Colors for all category types (local model + Roboflow)
         const classColors = {
-            // Roboflow categories
             'cardboard': '#D2691E',
             'glass': '#87CEEB',
             'metal': '#708090',
             'paper': '#F0E68C',
             'plastic': '#FF6347',
             'trash': '#696969',
-            // Original local model categories
             'E-waste': '#00CED1',
             'Metal-waste': '#708090',
             'bottles': '#00CED1',
@@ -515,7 +503,6 @@
         });
     };
 
-    // Event listeners
     startBtn.addEventListener('click', startCamera);
     window.addEventListener('beforeunload', stopCamera);
 </script>

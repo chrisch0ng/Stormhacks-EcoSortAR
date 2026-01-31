@@ -3,7 +3,6 @@ from flask_login import LoginManager, login_required, current_user
 from dotenv import load_dotenv
 import os
 
-# Load environment variables from .env file
 load_dotenv()
 
 from config import Config
@@ -12,10 +11,8 @@ from models import db, User
 app = Flask(__name__)
 app.config.from_object(Config)
 
-# Initialize extensions
 db.init_app(app)
 
-# Setup Flask-Login
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'auth.login'
@@ -28,7 +25,6 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 
-# Register blueprints
 from auth import auth_bp
 from gamification import gamification_bp
 from analytics import analytics_bp
@@ -37,7 +33,6 @@ app.register_blueprint(auth_bp)
 app.register_blueprint(gamification_bp)
 app.register_blueprint(analytics_bp)
 
-# Check if Roboflow is configured
 from roboflow_detect import is_roboflow_configured, detect_waste_roboflow
 USE_ROBOFLOW = is_roboflow_configured()
 
@@ -45,7 +40,6 @@ if USE_ROBOFLOW:
     print("Using Roboflow API for classification")
 else:
     print("Roboflow not configured, falling back to local YOLO model")
-    # Only load local model if Roboflow not available
     import numpy as np
     import cv2
     import base64
@@ -61,20 +55,17 @@ else:
 @app.route('/')
 @login_required
 def index():
-    """Render the main classifier page"""
     return render_template('index.html')
 
 
 @app.route('/leaderboard')
 def leaderboard():
-    """Render the leaderboard page"""
     return render_template('leaderboard.html')
 
 
 @app.route('/profile')
 @login_required
 def profile():
-    """Render the user profile page"""
     from gamification import get_user_rank
 
     user = current_user
@@ -92,7 +83,6 @@ def profile():
 @app.route('/classify', methods=['POST'])
 @login_required
 def classify():
-    """Classify image from webcam and record for gamification"""
     from gamification import record_classification
 
     try:
@@ -100,7 +90,6 @@ def classify():
         image_data = data['image']
 
         if USE_ROBOFLOW:
-            # Use Roboflow API
             result = detect_waste_roboflow(image_data)
 
             if not result['success']:
@@ -110,27 +99,22 @@ def classify():
             boxes = result['boxes']
 
         else:
-            # Use local YOLO model (fallback)
             import numpy as np
             import cv2
             import base64
             from io import BytesIO
             from PIL import Image
 
-            # Remove the data URL prefix
             if ',' in image_data:
                 image_data = image_data.split(',')[1]
 
-            # Decode base64 image
             image_bytes = base64.b64decode(image_data)
             image = Image.open(BytesIO(image_bytes)).convert('RGB')
 
-            # Convert to numpy array
             image_rgb = np.array(image)
             image_bgr = cv2.cvtColor(image_rgb, cv2.COLOR_RGB2BGR)
             image_bgr = cv2.resize(image_rgb, (640, 480))
 
-            # Run inference with YOLO model
             results = model(image_bgr, verbose=False)
             result = results[0]
 
@@ -176,13 +160,10 @@ def classify():
                             'fine_class': fine_class_name
                         })
 
-        # Handle gamification for top detection
         gamification_results = None
         if boxes:
-            # Find highest confidence detection
             top_box = max(boxes, key=lambda x: x['confidence'])
 
-            # Record if confidence > 0.3 (lowered threshold for Roboflow)
             if top_box['confidence'] > 0.3:
                 gamification_results = record_classification(
                     user=current_user,
@@ -212,7 +193,6 @@ def classify():
         }), 500
 
 
-# Create database tables on first request
 @app.before_request
 def create_tables():
     if not hasattr(app, '_got_first_request_done'):

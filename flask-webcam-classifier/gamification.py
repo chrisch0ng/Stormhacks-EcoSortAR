@@ -1,7 +1,3 @@
-"""
-Gamification system for points, badges, and leaderboard.
-"""
-
 from flask import Blueprint, jsonify
 from flask_login import login_required, current_user
 from models import db, User, Badge, UserBadge, Classification
@@ -11,50 +7,21 @@ gamification_bp = Blueprint('gamification', __name__)
 
 
 def calculate_points(category, streak_days=0):
-    """
-    Calculate points earned for a classification.
-
-    Args:
-        category: The coarse category of the classified item
-        streak_days: Current streak days for bonus calculation
-
-    Returns:
-        Total points earned
-    """
     base_points = Config.POINTS_PER_CLASSIFICATION
 
-    # Check if it's a recyclable category for bonus
     if category in Config.RECYCLABLE_CATEGORIES:
         base_points += Config.POINTS_RECYCLABLE_BONUS
     elif category == 'trash':
         base_points = Config.POINTS_TRASH
 
-    # Add streak bonus
     streak_bonus = streak_days * Config.POINTS_STREAK_MULTIPLIER
-
     return base_points + streak_bonus
 
 
 def record_classification(user, category, fine_category=None, confidence=None):
-    """
-    Record a classification and award points.
-
-    Args:
-        user: User model instance
-        category: Coarse category (e.g., 'plastic', 'paper')
-        fine_category: Fine-grained category (e.g., 'bottles', 'cups')
-        confidence: Classification confidence score
-
-    Returns:
-        dict with points earned and any new badges
-    """
-    # Update streak first (this affects points)
     user.update_streak()
-
-    # Calculate points
     points = calculate_points(category, user.current_streak)
 
-    # Create classification record
     classification = Classification(
         user_id=user.id,
         category=category,
@@ -63,13 +30,10 @@ def record_classification(user, category, fine_category=None, confidence=None):
         points_earned=points
     )
 
-    # Add points to user
     user.add_points(points)
-
     db.session.add(classification)
     db.session.commit()
 
-    # Check for new badges
     new_badges = check_and_award_badges(user)
 
     return {
@@ -81,24 +45,13 @@ def record_classification(user, category, fine_category=None, confidence=None):
 
 
 def check_and_award_badges(user):
-    """
-    Check if user has earned any new badges and award them.
-
-    Args:
-        user: User model instance
-
-    Returns:
-        List of newly earned badge dicts
-    """
     new_badges = []
     all_badges = Badge.query.all()
 
     for badge in all_badges:
-        # Skip if user already has this badge
         if user.has_badge(badge.id):
             continue
 
-        # Check if badge is earned
         if badge.check_earned(user):
             user_badge = UserBadge(user_id=user.id, badge_id=badge.id)
             db.session.add(user_badge)
@@ -116,21 +69,10 @@ def check_and_award_badges(user):
 
 
 def get_leaderboard(limit=10, timeframe='all'):
-    """
-    Get the leaderboard of top users.
-
-    Args:
-        limit: Number of users to return
-        timeframe: 'all', 'weekly', or 'monthly'
-
-    Returns:
-        List of user dicts with rank, username, and points
-    """
     from datetime import datetime, timedelta
     from sqlalchemy import func
 
     if timeframe == 'all':
-        # All-time leaderboard based on total_points
         users = User.query.order_by(User.total_points.desc()).limit(limit).all()
         return [
             {
@@ -143,13 +85,11 @@ def get_leaderboard(limit=10, timeframe='all'):
             for i, user in enumerate(users)
         ]
     else:
-        # Time-based leaderboard
         if timeframe == 'weekly':
             start_date = datetime.utcnow() - timedelta(days=7)
-        else:  # monthly
+        else:
             start_date = datetime.utcnow() - timedelta(days=30)
 
-        # Sum points from classifications in timeframe
         results = db.session.query(
             User.id,
             User.username,
@@ -176,31 +116,18 @@ def get_leaderboard(limit=10, timeframe='all'):
 
 
 def get_user_rank(user):
-    """
-    Get the user's rank on the leaderboard.
-
-    Args:
-        user: User model instance
-
-    Returns:
-        User's rank (1-indexed)
-    """
     higher_count = User.query.filter(User.total_points > user.total_points).count()
     return higher_count + 1
 
 
-# API Routes
-
 @gamification_bp.route('/api/leaderboard')
 @gamification_bp.route('/api/leaderboard/<timeframe>')
 def api_leaderboard(timeframe='all'):
-    """Get leaderboard data"""
     if timeframe not in ['all', 'weekly', 'monthly']:
         timeframe = 'all'
 
     leaderboard = get_leaderboard(limit=10, timeframe=timeframe)
 
-    # Include current user's rank if logged in
     user_rank = None
     if current_user.is_authenticated:
         user_rank = get_user_rank(current_user)
@@ -215,7 +142,6 @@ def api_leaderboard(timeframe='all'):
 
 @gamification_bp.route('/api/badges')
 def api_all_badges():
-    """Get all available badges"""
     badges = Badge.query.all()
     return jsonify({
         'success': True,
@@ -237,10 +163,8 @@ def api_all_badges():
 @gamification_bp.route('/api/user/badges')
 @login_required
 def api_user_badges():
-    """Get current user's earned badges"""
     user_badges = current_user.badges.all()
     earned_ids = [ub.badge_id for ub in user_badges]
-
     all_badges = Badge.query.all()
 
     return jsonify({
